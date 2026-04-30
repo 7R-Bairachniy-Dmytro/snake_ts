@@ -1,6 +1,7 @@
 import { Application, Container, Graphics, BitmapText, Assets } from "pixi.js";
 import { RadioGroup, CheckBox } from '@pixi/ui';
 import { createButton } from './button.js'
+import Game, { Field, Snake, Food, Cell } from "./game.js";
 
 (async () => {
   // Create a new application
@@ -162,5 +163,18 @@ import { createButton } from './button.js'
   checkboxMenu.addChild(buttonExit);
 
 
+  const myGame = new Game(
+    new Field(),
+    new Snake(),
+    new Food(),
+    fieldContainer,
+    app
+  );
 
+ myGame.start();
+
+  // fieldContainer.x = baseContainer.x;
+  // fieldContainer.y = baseContainer.y;
+  // fieldContainer.pivot.y = 300;
+  // fieldContainer.pivot.x = 450;
 })();
