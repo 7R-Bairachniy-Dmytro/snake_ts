@@ -1,4 +1,4 @@
-import {Container, Graphics} from "pixi.js";
+import {BitmapText, Container, Graphics} from "pixi.js";
 
 
 const DefaultSettings = {
@@ -30,6 +30,7 @@ export default class Game {
     this.mode = eMode.classic;
     this.container = container;
     this.app = app;
+    this.isRunning = false;
   }
 
   step = interval => {
@@ -45,33 +46,43 @@ export default class Game {
   }
 
 
-  move = direction => {
+  move() {
     if ( this.mode === eMode.classic ) {
-      let headPosition = this.snake.headPosition();
-      switch (direction) {
+      let headPosition = new Cell(this.snake.headPosition.x, this.snake.headPosition.y);
+      switch (this.currentDirection) {
         case directions.LEFT:
           if (headPosition.x > 0) {
             headPosition.x--;
+          }else{
+            this.isRunning = false;
           }
           break;
         case directions.RIGHT:
-          if (headPosition.x < this.field.width) {
+          if (headPosition.x < this.field.width-1) {
             headPosition.x++;
+          }else{
+            this.isRunning = false;
           }
           break;
         case directions.UP:
-          if (headPosition.y < this.field.height) {
-            headPosition.y++;
+          if (headPosition.y > 0) {
+            headPosition.y--;
+          }else{
+            this.isRunning = false;
           }
           break;
         case directions.DOWN:
-          if (headPosition.y > 0) {
-            headPosition.y--;
+          if (headPosition.y < this.field.height-1) {
+            headPosition.y++;
+          }else{
+            this.isRunning = false;
           }
+          break;
       }
 
-      if ( headPosition === this.food){
+      if ( headPosition.x === this.food.x && headPosition.y === this.food.y){
         this.snake.ate(headPosition);
+        this.generateFood();
       }else{
         this.snake.moveHead(headPosition);
       }
@@ -79,9 +90,96 @@ export default class Game {
 
   }
 
+  // movementToTheLeft(){
+  //   let headPosition = new Cell(this.snake.headPosition.x, this.snake.headPosition.y);
+  //   if (headPosition.x > 0) {
+  //     headPosition.x--;
+  //   }else{
+  //     this.isRunning=false;
+  //   }
+  // }
+
+  generateFood(){
+    let placed = false;
+    while(!placed) {
+
+      let x = Math.floor(Math.random() * this.field.width);
+      let y = Math.floor(Math.random() * this.field.height);
+      placed = true;
+      for (let s=0; s<this.snake.body.length; s++ ) {
+        if ( this.snake.body[s].x === x && this.snake.body[s].y === y ) {
+          placed = false;
+        }
+      }
+
+      if (placed) {
+        this.food.x = x;
+        this.food.y = y;
+      }
+      // walls
+    }
+  }
+
   start = () => {
-    app.tick
-    this.field.Draw(this.snake,this.food,this.container);
+    let elapsed = 0;
+    this.generateFood();
+    this.isRunning = true
+    this.app.ticker.add((delta)=>{
+
+        elapsed += delta.deltaMS / 200;
+
+        if (elapsed >= 0.5) {
+          if (this.isRunning) {
+            // слушаем клавиатуру
+            window.addEventListener('keydown', (e) => {
+              switch (e.key) {
+                case 'ArrowLeft':
+                  this.currentDirection = directions.LEFT;
+                  break;
+                case 'ArrowRight':
+                  this.currentDirection = directions.RIGHT;
+                  break;
+                case 'ArrowUp':
+                  this.currentDirection = directions.UP;
+                  break;
+                case 'ArrowDown':
+                  this.currentDirection = directions.DOWN;
+                  break;
+              }
+            });
+
+            this.move();
+
+            this.field.Draw(this.snake, this.food, this.container);
+            //console.log('Half second passed');
+            elapsed = 0;
+          }else{
+            this.container.reset;
+            const graphics = new Graphics();
+            graphics.rect(0, 0, 600, 600);
+            graphics.fill('#918e8e');
+
+            this.container.addChild(graphics);
+
+            const gameOverText = new BitmapText({
+              text: 'GAME OVER',
+              style: {
+                fontFamily: 'Custom',
+                fontSize: 20,
+                fill: '#e60000',
+                align: 'center',
+              },
+              scale: 2,
+              anchor: 0.5,
+              position: { x: this.container.width / 2, y: this.container.height / 2},
+            })
+
+            this.container.addChild(gameOverText);
+          }
+        }
+    });
+  //  this.generateFood();
+   // this.field.Draw(this.snake,this.food,this.container);
   }
 }
 
@@ -101,9 +199,9 @@ export class Cell {
   }
 }
 
-export class Field extends Container {
+export class Field {
   constructor(size) {
-    super();
+   // super();
     this.height = size;
     this.width = size;
   }
@@ -117,24 +215,36 @@ export class Field extends Container {
   }
 
   Draw(snake,food, container){
+    container.reset;
+
     const cell = new Graphics();
+
+    const playField = new Graphics();
+    playField.rect(0, 0, 600, 600);
+    playField.fill('#676767');
+    container.addChild(playField);
+    container.width = playField.width;
+    // Create grid background
+    const grid = new Graphics();
     const gridSize = 30;
-    // for ( let i=0; i<this.width; i++){
-    //   for ( let j=0; j<this.height; j++){
-    //     for (let s of snake){
-    //       if (s.x===i && s.y===j){
-    //         cell.rect(gridSize*i,gridSize*i,gridSize,gridSize);
-    //         cell.fill('#c31010');
-    //       }
-    //     }
-    //   }
-    // }
+    for (let x = 0; x < playField.width; x += gridSize) {
+      grid.moveTo(x, 0).lineTo(x, playField.height);
+    }
+    for (let y = 0; y < playField.height; y += gridSize) {
+      grid.moveTo(0, y).lineTo(playField.width, y);
+    }
+    grid.stroke({ width: 1, color: '#7e7d7d' });
+    container.addChild(grid);
+
     for (let s=0; s<snake.body.length; s++ ) {
       cell.rect(gridSize * snake.body[s].x, gridSize * snake.body[s].y, gridSize, gridSize);
       cell.fill('#c31010');
 
     }
-    console.log(snake.body.length);
+
+    //food
+    cell.rect(gridSize*food.getX(),gridSize*food.getY(),gridSize,gridSize);
+    cell.fill('#38951e');
     // cell.rect(50, 50, 100, 100);
     // cell.fill(0xde3249);
 
@@ -154,14 +264,18 @@ export class Snake extends Cell {
   }
 
   moveHead = cell => {
-    this.currentHeadPosition = cell;
-    this.body.unshift(cell);
-    this.body.pop();
+    if ( this.currentHeadPosition.x !== cell.x || this.currentHeadPosition.y !== cell.y) {
+      this.currentHeadPosition = cell;
+      this.body.unshift(cell);
+      this.body.pop();
+    }
   }
 
-  ate = cell =>{
-    this.currentHeadPosition = cell;
-    this.body.unshift(cell);
+  ate = cell => {
+    if (this.currentHeadPosition.x !== cell.x || this.currentHeadPosition.y !== cell.y) {
+      this.currentHeadPosition = cell;
+      this.body.unshift(cell);
+    }
   }
 
   get headPosition() {

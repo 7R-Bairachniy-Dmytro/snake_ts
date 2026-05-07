@@ -18,7 +18,7 @@ import Game, { Field, Snake, Food, Cell } from "./game.js";
 
   const fieldContainer = new Container();
   const menuContainer = new Container();
-  baseContainer.addChild(fieldContainer);
+
   baseContainer.addChild(menuContainer);
 
   const menuField = new Graphics();
@@ -26,29 +26,13 @@ import Game, { Field, Snake, Food, Cell } from "./game.js";
   menuContainer.addChild(menuField);
   menuContainer.width = menuField.width;
 
-  const playField = new Graphics();
-  playField.rect(0, 0, 600, 600);
-  playField.fill('#676767');
-  fieldContainer.addChild(playField);
 
-  // Create grid background
-  const grid = new Graphics();
-  const gridSize = 30;
-  for (let x = 0; x < playField.width; x += gridSize) {
-    grid.moveTo(x, 0).lineTo(x, playField.height);
-  }
-  for (let y = 0; y < playField.height; y += gridSize) {
-    grid.moveTo(0, y).lineTo(playField.width, y);
-  }
-  grid.stroke({ width: 1, color: '#7e7d7d' });
-  fieldContainer.addChild(grid);
-  fieldContainer.width = playField.width;
 
   // Move the container to the center
   baseContainer.x = app.screen.width / 2;
   baseContainer.y = app.screen.height / 2;
 
-  menuContainer.x = playField.width;
+  menuContainer.x = 600; //HARDCODE
 
   baseContainer.width = fieldContainer.width+menuContainer.width;
   baseContainer.pivot.x = baseContainer.width/2;
@@ -164,7 +148,7 @@ import Game, { Field, Snake, Food, Cell } from "./game.js";
 
 
   const myGame = new Game(
-    new Field(),
+    new Field(20,20),
     new Snake(),
     new Food(),
     fieldContainer,
@@ -173,6 +157,7 @@ import Game, { Field, Snake, Food, Cell } from "./game.js";
 
  myGame.start();
 
+  baseContainer.addChild(fieldContainer);
   // fieldContainer.x = baseContainer.x;
   // fieldContainer.y = baseContainer.y;
   // fieldContainer.pivot.y = 300;
