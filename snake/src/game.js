@@ -21,6 +21,7 @@ export default class Game {
     this.speed = 300;
     this.score = 0;
     this.moved = false;
+    this.best = JSON.parse(localStorage.getItem('best'));
 
     window.addEventListener('keydown', (e) => {
       switch (e.key) {
@@ -143,6 +144,11 @@ export default class Game {
           this.snake.ate(headPosition);
           this.generateFood();
           this.score++;
+
+          let possibleBest = JSON.parse(localStorage.getItem('best'));
+          if (this.score>possibleBest) {
+            localStorage.setItem('best', JSON.stringify(this.score));
+          }
 
           if (this.menuTextScore) {
             this.menuTextScore.text = 'Score: ' + this.score;
@@ -311,7 +317,10 @@ export default class Game {
         this.elapsed = 0;
       } else {
         this.field.gameOverScreen();
-
+        let possibleBest = JSON.parse(localStorage.getItem('best'));
+        if (this.score>possibleBest) {
+          localStorage.setItem('best', JSON.stringify(this.score));
+        }
       }
     }
   }
@@ -383,8 +392,9 @@ export default class Game {
     });
     this.menuField.addChild(gameNameTitle);
 
+    this.best = JSON.parse(localStorage.getItem('best'));
     const menuTextBest = new BitmapText({
-      text: 'Best: 0',
+      text: 'Best: '+this.best,
       style: {
         fontFamily: 'Custom',
         fontSize: 20,
@@ -452,9 +462,9 @@ export default class Game {
     });
     this.menuField.addChild(gameNameTitle);
 
-
+    this.best = JSON.parse(localStorage.getItem('best'));
     const menuTextBest = new BitmapText({
-      text: 'Best: 0',
+      text: 'Best: '+this.best,
       style: {
         fontFamily: 'Custom',
         fontSize: 20,

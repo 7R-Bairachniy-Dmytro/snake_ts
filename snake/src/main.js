@@ -31,8 +31,8 @@ import {Field} from "./field.js";
 
   baseContainer.addChild(myGame.getFieldContainer());
   baseContainer.addChild(myGame.getMenuContainer());
-  // fieldContainer.x = baseContainer.x;
-  // fieldContainer.y = baseContainer.y;
-  // fieldContainer.pivot.y = 300;
-  // fieldContainer.pivot.x = 450;
+  baseContainer.x = app.screen.width / 2;
+  baseContainer.y = app.screen.height/2;
+  baseContainer.pivot.x = baseContainer.width / 2;
+  baseContainer.pivot.y = baseContainer.height / 2;
 })();
