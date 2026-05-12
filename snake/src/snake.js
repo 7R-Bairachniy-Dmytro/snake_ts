@@ -9,6 +9,7 @@ export class Snake extends Cell {
     this.body = [];
     this.body[0] = this.currentHeadPosition;
     this.body[1] = new Cell(10,9);
+    this.body[2] = new Cell(11,9);
   }
 
   moveHead = cell => {
@@ -42,6 +43,15 @@ export class Snake extends Cell {
         }
       }
     }
+  }
+
+  resetSnake = () => {
+    this.currentHeadPosition.x = DefaultSettings.headPositionX;
+    this.currentHeadPosition.y = DefaultSettings.headPositionY;
+    this.body = [];
+    this.body[0] = this.currentHeadPosition;
+    this.body[1] = new Cell(10,9);
+    this.body[2] = new Cell(11,9);
   }
 
   checkSelfEating = cell => {

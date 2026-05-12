@@ -54,6 +54,34 @@ export default class Game {
 
   }
 
+  createMenuElements(){
+    this.gameNameTitle = new BitmapText({
+      text: 'Snake Game',
+      style: {
+        fontFamily: 'Custom',
+        fontSize: 20,
+        fill: '#61c65d',
+        align: 'center',
+      },
+      scale: 2,
+      anchor: 0.5,
+      position: { x: this.menuContainer.width / 2, y: this.menuContainer.height / 15},
+    });
+
+    this.menuTextBest = new BitmapText({
+      text: 'Best: '+this.best,
+      style: {
+        fontFamily: 'Custom',
+        fontSize: 20,
+        fill: '#ffffff',
+        align: 'center',
+      },
+      scale: 2,
+      anchor: 0.5,
+      position: { x: this.menuContainer.width / 2, y: this.menuContainer.height / 4},
+    })
+  }
+
   updateBestScore() {
     let val = JSON.parse(localStorage.getItem('best'));
     if (val === null || val === undefined) {
@@ -206,7 +234,6 @@ export default class Game {
 
 
   generateWall() {
-    this.walls = [];
     let placed = false;
     while (!placed) {
       let firstX = Math.floor(Math.random() * this.field.width);
@@ -389,17 +416,20 @@ export default class Game {
 
   stop() {
     this.elapsed = 0;
-    this.snake = new Snake();
+    this.snake.resetSnake();
     this.generateFood();
     this.portal = [];
     this.walls = [];
     this.field.Draw(this.snake, this.food,this.walls,this.portal);
     this.isRunning = false;
+    this.mode = eMode.classic;
 
     this.app.ticker.remove(this.onTick);
 
+    this.destroyPlayMenuElems();
     this.menuField.removeChildren();
     this.menuField.clear();
+
     this.createMenu();
   }
 
@@ -416,13 +446,19 @@ export default class Game {
     }
     this.currentDirection = directions.LEFT;
     this.score = 0;
+    this.menuField.children.forEach(child => {
+      if (child.destroy) child.destroy();
+    });
+    this.destroyMenuElems();
     this.menuField.removeChildren();
     this.menuField.clear();
+
     this.createPlayMenu();
-    this.snake = new Snake();
+    this.snake.resetSnake();
     if (this.mode === eMode.portal){
       this.generatePortal()
-      this.food = new Food();
+      this.food.x = -100;
+      this.food.y = -100;
     }else{
       this.portal = [];
       this.generateFood();
@@ -440,12 +476,11 @@ export default class Game {
   }
 
   createPlayMenu(){
-    this.menuField.removeChildren();
-    this.menuField.clear();
 
     this.menuField.rect(0,0,300, 600).fill('#087c80');
     this.menuContainer.width = this.menuField.width;
-    const gameNameTitle = new BitmapText({
+
+    this.gameNameTitle = new BitmapText({
       text: 'Snake Game',
       style: {
         fontFamily: 'Custom',
@@ -457,10 +492,11 @@ export default class Game {
       anchor: 0.5,
       position: { x: this.menuContainer.width / 2, y: this.menuContainer.height / 15},
     });
-    this.menuField.addChild(gameNameTitle);
+    this.menuField.addChild(this.gameNameTitle);
 
     this.updateBestScore();
-    const menuTextBest = new BitmapText({
+
+    this.menuTextBest = new BitmapText({
       text: 'Best: '+this.best,
       style: {
         fontFamily: 'Custom',
@@ -472,14 +508,14 @@ export default class Game {
       anchor: 0.5,
       position: { x: this.menuContainer.width / 2, y: this.menuContainer.height / 4},
     })
-    this.menuField.addChild(menuTextBest);
+    this.menuField.addChild(this.menuTextBest);
 
 
-    const menuRectScore = new Graphics();
-    menuRectScore.rect(0,0, this.menuField.width, this.menuField.height/10)
+    this.menuRectScore = new Graphics();
+    this.menuRectScore.rect(0,0, this.menuField.width, this.menuField.height/10)
       .fill('#215b60');
-    this.menuField.addChild(menuRectScore);
-    menuRectScore.y = this.menuField.height/3;
+    this.menuField.addChild(this.menuRectScore);
+    this.menuRectScore.y = this.menuField.height/3;
 
     this.menuTextScore = new BitmapText({
       text: 'Score: '+ this.score,
@@ -496,26 +532,23 @@ export default class Game {
     this.menuField.addChild(this.menuTextScore);
 
     // Buttons
-    const buttonMenu = createButton('Menu');
-    buttonMenu.x = this.menuField.x+80;
-    buttonMenu.y = this.menuField.height-100;
+    this.buttonMenu = createButton('Menu');
+    this.buttonMenu.x = this.menuField.x+80;
+    this.buttonMenu.y = this.menuField.height-100;
 
 
-    buttonMenu.on('pointerdown', () => {
+    this.buttonMenu.on('pointerdown', () => {
       this.stop();
     });
 
-    this.menuField.addChild(buttonMenu);
+    this.menuField.addChild(this.buttonMenu);
   }
 
   createMenu(){
-    this.menuField.removeChildren();
-    this.menuField.clear();
-
     this.menuField.rect(0,0,300, 600).fill('#087c80');
 
     this.menuContainer.width = this.menuField.width;
-    const gameNameTitle = new BitmapText({
+    this.gameNameTitle = new BitmapText({
       text: 'Snake Game',
       style: {
         fontFamily: 'Custom',
@@ -527,10 +560,10 @@ export default class Game {
       anchor: 0.5,
       position: { x: this.menuContainer.width / 2, y: this.menuContainer.height / 15},
     });
-    this.menuField.addChild(gameNameTitle);
+    this.menuField.addChild(this.gameNameTitle);
 
     this.updateBestScore();
-    const menuTextBest = new BitmapText({
+    this.menuTextBest = new BitmapText({
       text: 'Best: '+this.best,
       style: {
         fontFamily: 'Custom',
@@ -542,14 +575,13 @@ export default class Game {
       anchor: 0.5,
       position: { x: this.menuContainer.width / 2, y: this.menuContainer.height / 4},
     })
-    this.menuField.addChild(menuTextBest);
+    this.menuField.addChild(this.menuTextBest);
 
-
-    const menuRectScore = new Graphics();
-    menuRectScore.rect(0,0, this.menuField.width, this.menuField.height/10)
+    this.menuRectScore = new Graphics();
+    this.menuRectScore.rect(0,0, this.menuField.width, this.menuField.height/10)
       .fill('#215b60');
-    this.menuField.addChild(menuRectScore);
-    menuRectScore.y = this.menuField.height/3;
+    this.menuField.addChild(this.menuRectScore);
+    this.menuRectScore.y = this.menuField.height/3;
 
     this.menuTextScore = new BitmapText({
       text: 'Score: '+ this.score,
@@ -566,7 +598,7 @@ export default class Game {
     this.menuField.addChild(this.menuTextScore);
 
     // checkbox
-    const checkboxMenu = new RadioGroup({
+    this.checkboxMenu = new RadioGroup({
       items: [
         new CheckBox({ style: { unchecked: this.uncheckedTex, checked: this.checkedTex, text: {
               fontSize: 22,
@@ -591,30 +623,49 @@ export default class Game {
       ],
       type: 'vertical'
     });
-    this.menuField.addChild(checkboxMenu);
-    checkboxMenu.x = this.menuField.x+20;
-    checkboxMenu.y = this.menuField.height/2;
-
-    //this.mode = eMode.classic;
-
-    checkboxMenu.onChange.connect((selItem)=>{
+    this.menuField.addChild(this.checkboxMenu);
+    this.checkboxMenu.x = this.menuField.x+20;
+    this.checkboxMenu.y = this.menuField.height/2;
+    this.checkboxMenu.onChange.connect((selItem)=>{
       this.mode = selItem;
     });
 
     // Buttons
-    const buttonStart = createButton('Start');
-    buttonStart.x = this.menuField.x+15;
-    buttonStart.y = this.menuField.height-100;
+    this.buttonStart = createButton('Start');
+    this.buttonStart.x = this.menuField.x+15;
+    this.buttonStart.y = this.menuField.height-100;
 
-    const buttonExit = createButton('Exit');
-    buttonExit.x = this.menuField.x+150;
-    buttonExit.y = this.menuField.height-100;
+    this.buttonExit = createButton('Exit');
+    this.buttonExit.x = this.menuField.x+150;
+    this.buttonExit.y = this.menuField.height-100;
 
-    buttonStart.on('pointerdown', () => this.start());
-    buttonExit.on('pointerdown', () => window.close());
+    this.buttonStart.on('pointerdown', () => this.start());
+    this.buttonExit.on('pointerdown', () => {
+     // document.getElementById("pixi-container").style.display = "none";
+      window.close();
+    });
 
-    this.menuField.addChild(buttonExit);
-    this.menuField.addChild(buttonStart);
+   this.menuField.addChild(this.buttonExit);
+    this.menuField.addChild(this.buttonStart);
+  }
+  destroyMenuElems(){
+    //this.checkboxMenu.destroy({ children: true, texture: true, });
+    // this.buttonStart.destroy({ children: true });
+    // this.buttonExit.destroy({ children: true });
+    this.menuField.children.forEach(child => {
+      if (child.destroy) {
+        child.destroy({ children: true });
+      }
+    });
+  }
+
+  destroyPlayMenuElems(){
+    this.buttonMenu.destroy({ children: true });
+    this.menuField.children.forEach(child => {
+      if (child.destroy) {
+        child.destroy({ children: true });
+      }
+    });
   }
 
   init(){

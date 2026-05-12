@@ -81,6 +81,7 @@ export class Field {
   }
 
   gameOverScreen(){
+    this.resetGraphics()
     this.playField.rect(0, 0, 600, 600);
     this.playField.fill('#b1afaf');
 
