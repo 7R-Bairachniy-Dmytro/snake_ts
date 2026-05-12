@@ -7,7 +7,7 @@ import {Snake} from "./snake.js";
 
 
 export default class Game {
-  constructor(field,snake,food,app) {
+  constructor(field, snake, food, app) {
     this.field = field;
     this.food = food;
     this.snake = snake;
@@ -21,30 +21,30 @@ export default class Game {
     this.speed = 300;
     this.score = 0;
     this.moved = false;
-    this.best = JSON.parse(localStorage.getItem('best'));
+    this.updateBestScore();
 
     window.addEventListener('keydown', (e) => {
       switch (e.key) {
         case 'ArrowLeft':
-          if ( this.currentDirection !== directions.RIGHT && this.moved){
+          if (this.currentDirection !== directions.RIGHT && this.moved) {
             this.currentDirection = directions.LEFT;
             this.moved = false;
           }
           break;
         case 'ArrowRight':
-          if ( this.currentDirection !== directions.LEFT && this.moved) {
+          if (this.currentDirection !== directions.LEFT && this.moved) {
             this.currentDirection = directions.RIGHT;
             this.moved = false;
           }
           break;
         case 'ArrowUp':
-          if ( this.currentDirection !== directions.DOWN && this.moved) {
+          if (this.currentDirection !== directions.DOWN && this.moved) {
             this.currentDirection = directions.UP;
             this.moved = false;
           }
           break;
         case 'ArrowDown':
-          if ( this.currentDirection !== directions.UP && this.moved) {
+          if (this.currentDirection !== directions.UP && this.moved) {
             this.currentDirection = directions.DOWN;
             this.moved = false;
           }
@@ -52,6 +52,15 @@ export default class Game {
       }
     });
 
+  }
+
+  updateBestScore() {
+    let val = JSON.parse(localStorage.getItem('best'));
+    if (val === null || val === undefined) {
+      this.best = 0;
+    } else {
+      this.best = val;
+    }
   }
 
   set moveDirection(direction) {
@@ -64,178 +73,220 @@ export default class Game {
 
   move() {
 
-      let headPosition = new Cell(this.snake.headPosition.x, this.snake.headPosition.y);
+    let headPosition = new Cell(this.snake.headPosition.x, this.snake.headPosition.y);
 
-    if (this.mode === eMode.portal) {
-      if (this.portal.length > 0) {
-        for (let i = 0; i < this.portal.length; i++) {
-          if (headPosition.x === this.portal[i].x && headPosition.y === this.portal[i].y) {
-            let pos = -1;
-            if (i === 0) {
-              i++;
-            } else {
-              i--;
-            }
-            headPosition.x = this.portal[i].x;
-            headPosition.y = this.portal[i].y;
-
-
-            this.generatePortal()
-
-            break;
-          }
+    // if (this.mode === eMode.portal) {
+    //   if (this.portal.length > 0) {
+    //     for (let i = 0; i < this.portal.length; i++) {
+    //       if (headPosition.x === this.portal[i].x && headPosition.y === this.portal[i].y) {
+    //         if (i === 0) {
+    //           i++;
+    //         } else {
+    //           i--;
+    //         }
+    //         headPosition.x = this.portal[i].x;
+    //         headPosition.y = this.portal[i].y;
+    //
+    //         this.generatePortal()
+    //
+    //         break;
+    //       }
+    //     }
+    //   }
+    // }
+    switch (this.currentDirection) {
+      case directions.LEFT:
+        if (headPosition.x > 0) {
+          headPosition.x--;
+        } else if (this.mode === eMode.noDie) {
+          headPosition.x = this.field.width - 1;
+        } else {
+          this.isRunning = false;
         }
+        break;
+      case directions.RIGHT:
+        if (headPosition.x < this.field.width - 1) {
+          headPosition.x++;
+        } else if (this.mode === eMode.noDie) {
+          headPosition.x = 0;
+        } else {
+          this.isRunning = false;
+        }
+        break;
+      case directions.UP:
+        if (headPosition.y > 0) {
+          headPosition.y--;
+        } else if (this.mode === eMode.noDie) {
+          headPosition.y = this.field.height - 1;
+        } else {
+          this.isRunning = false;
+        }
+        break;
+      case directions.DOWN:
+        if (headPosition.y < this.field.height - 1) {
+          headPosition.y++;
+        } else if (this.mode === eMode.noDie) {
+          headPosition.y = 0;
+        } else {
+          this.isRunning = false;
+        }
+        break;
+    }
+
+    let validateSelfEating = false;
+
+    if (this.mode === eMode.noDie) {
+      validateSelfEating = true;
+    } else {
+      if (this.snake.checkSelfEating(headPosition)) {
+        this.isRunning = false;
+        validateSelfEating = false;
+      } else {
+        validateSelfEating = true;
       }
     }
-      switch (this.currentDirection) {
-        case directions.LEFT:
-          if (headPosition.x > 0 && !this.checkWallPosition(headPosition.x,headPosition.y)) {
-            headPosition.x--;
-          }else if(this.mode === eMode.noDie) {
-            headPosition.x = this.field.width -1;
-          } else{
-            this.isRunning = false;
-          }
-          break;
-        case directions.RIGHT:
-          if (headPosition.x < this.field.width-1 && !this.checkWallPosition(headPosition.x,headPosition.y)) {
-            headPosition.x++;
-          }else if(this.mode === eMode.noDie) {
-            headPosition.x = 0;
-          } else{
-            this.isRunning = false;
-          }
-          break;
-        case directions.UP:
-          if (headPosition.y > 0 && !this.checkWallPosition(headPosition.x,headPosition.y)) {
-            headPosition.y--;
-          }else if(this.mode === eMode.noDie) {
-            headPosition.y = this.field.height-1;
-          } else{
-            this.isRunning = false;
-          }
-          break;
-        case directions.DOWN:
-          if (headPosition.y < this.field.height-1 && !this.checkWallPosition(headPosition.x,headPosition.y)) {
-            headPosition.y++;
-          }else if(this.mode === eMode.noDie) {
-            headPosition.y = 0;
-          } else{
-            this.isRunning = false;
-          }
-          break;
+
+    let isWall = false;
+    if (this.mode === eMode.walls) {
+      if (this.checkWallPosition(headPosition.x, headPosition.y)) {
+        this.isRunning = false;
+        validateSelfEating = false;
       }
+    }
 
-      let validateSelfEating = false;
-
-      if (this.mode === eMode.noDie){
-        validateSelfEating = true;
-      }else{
-        if (this.snake.checkSelfEating(headPosition) ){
-          this.isRunning = false;
-          validateSelfEating = false;
+    if (validateSelfEating) {
+      if (this.checkFoodOrPortal(headPosition)) {
+        if (this.mode === eMode.portal){
+          this.snake.atePortal(headPosition,this.portal);
+          this.generatePortal()
         }else{
-          validateSelfEating = true;
-        }
-      }
-
-      if (validateSelfEating){
-        if ( headPosition.x === this.food.x && headPosition.y === this.food.y){
           this.snake.ate(headPosition);
           this.generateFood();
-          this.score++;
-
-          let possibleBest = JSON.parse(localStorage.getItem('best'));
-          if (this.score>possibleBest) {
-            localStorage.setItem('best', JSON.stringify(this.score));
-          }
-
-          if (this.menuTextScore) {
-            this.menuTextScore.text = 'Score: ' + this.score;
-          }
-
-          if (this.mode === eMode.speed){
-            if (this.speed>11){
-              this.speed-=10;
-            }
-          }
-        }else{
-          this.snake.moveHead(headPosition);
-
         }
-        this.moved = true;
+
+        if (this.mode === eMode.walls) {
+          this.generateWall();
+        }
+
+        // stats
+        this.score++;
+        let possibleBest = JSON.parse(localStorage.getItem('best'));
+        if (this.score > possibleBest) {
+          localStorage.setItem('best', JSON.stringify(this.score));
+        }
+
+        if (this.menuTextScore) {
+          this.menuTextScore.text = 'Score: ' + this.score;
+        }
+
+        if (this.mode === eMode.speed) {
+          if (this.speed > 11) {
+            this.speed -= 10;
+          }
+        }
+      } else {
+        this.snake.moveHead(headPosition);
+
       }
+      this.moved = true;
+    }
 
   }
 
-  generateWalls() {
-    this.walls = [];
-    let wallsCount = Math.floor(Math.random() * 10) + 5;
-
-    for (let i = 0; i < wallsCount; i++) {
-      let wallCells = Math.floor(Math.random() * 7) + 2;
-
-      let placed = false;
-
-      let cellX = -1;
-      let cellY = -1;
-      while (!placed) {
-        let firstX = Math.floor(Math.random() * this.field.width);
-        let firstY = Math.floor(Math.random() * this.field.height);
-        let isSnakePos = this.checkSnakePosition(firstX, firstY);
-
-        if (!isSnakePos) {
-          this.walls.push(new Cell(firstX, firstY));
-          cellX = firstX;
-          cellY = firstY;
-          placed = true;
-        }
+  checkFoodOrPortal(headPosition) {
+    if (this.mode === eMode.portal) {
+      return this.checkPortalPosition(headPosition.x,headPosition.y)
+    } else {
+      if (headPosition.x === this.food.x && headPosition.y === this.food.y){
+        return true
       }
-      for (let j = 0; j < wallCells; j++) {
+    }
+    return false;
+  }
 
-        let placed = false;
-        while (!placed) {
-          let direction = Math.floor(Math.random() * 5) + 1;
-          let checkX = cellX;
-          let checkY = cellY;
-          switch (direction) {
-            case directions.LEFT:
-              checkX--;
-              if (cellX > 0 && !this.checkSnakePosition(checkX, cellY)) {
-                cellX--;
-                this.walls.push(new Cell(cellX, cellY));
-                placed = true;
-              }
-              break;
-            case directions.RIGHT:
-              checkX++;
-              if (cellX < this.field.width - 1 && !this.checkSnakePosition(checkX, cellY)) {
-                cellX++;
-                this.walls.push(new Cell(cellX, cellY));
-                placed = true;
-              }
-              break;
-            case directions.DOWN:
-              checkY++;
-              if (cellY < this.field.height - 1 && !this.checkSnakePosition(cellX, checkY)) {
-                cellY++;
-                this.walls.push(new Cell(cellX, cellY));
-                placed = true;
-              }
-              break;
-            case directions.UP:
-              checkY--;
-              if (cellY > 0 && !this.checkSnakePosition(cellX, checkY)) {
-                cellY--;
-                this.walls.push(new Cell(cellX, cellY));
-                placed = true;
-              }
-              break;
-          }
-        }
+
+  generateWall() {
+    this.walls = [];
+    let placed = false;
+    while (!placed) {
+      let firstX = Math.floor(Math.random() * this.field.width);
+      let firstY = Math.floor(Math.random() * this.field.height);
+      let isSnakePos = this.checkSnakePosition(firstX, firstY);
+
+      if (!isSnakePos) {
+        this.walls.push(new Cell(firstX, firstY));
+        placed = true;
       }
     }
   }
+  // generateWalls() {
+  //   this.walls = [];
+  //   let wallsCount = Math.floor(Math.random() * 10) + 5;
+  //
+  //   for (let i = 0; i < wallsCount; i++) {
+  //     let wallCells = Math.floor(Math.random() * 7) + 2;
+  //
+  //     let placed = false;
+  //
+  //     let cellX = -1;
+  //     let cellY = -1;
+  //     while (!placed) {
+  //       let firstX = Math.floor(Math.random() * this.field.width);
+  //       let firstY = Math.floor(Math.random() * this.field.height);
+  //       let isSnakePos = this.checkSnakePosition(firstX, firstY);
+  //
+  //       if (!isSnakePos) {
+  //         this.walls.push(new Cell(firstX, firstY));
+  //         cellX = firstX;
+  //         cellY = firstY;
+  //         placed = true;
+  //       }
+  //     }
+  //     for (let j = 0; j < wallCells; j++) {
+  //
+  //       let placed = false;
+  //       while (!placed) {
+  //         let direction = Math.floor(Math.random() * 5) + 1;
+  //         let checkX = cellX;
+  //         let checkY = cellY;
+  //         switch (direction) {
+  //           case directions.LEFT:
+  //             checkX--;
+  //             if (cellX > 0 && !this.checkSnakePosition(checkX, cellY)) {
+  //               cellX--;
+  //               this.walls.push(new Cell(cellX, cellY));
+  //               placed = true;
+  //             }
+  //             break;
+  //           case directions.RIGHT:
+  //             checkX++;
+  //             if (cellX < this.field.width - 1 && !this.checkSnakePosition(checkX, cellY)) {
+  //               cellX++;
+  //               this.walls.push(new Cell(cellX, cellY));
+  //               placed = true;
+  //             }
+  //             break;
+  //           case directions.DOWN:
+  //             checkY++;
+  //             if (cellY < this.field.height - 1 && !this.checkSnakePosition(cellX, checkY)) {
+  //               cellY++;
+  //               this.walls.push(new Cell(cellX, cellY));
+  //               placed = true;
+  //             }
+  //             break;
+  //           case directions.UP:
+  //             checkY--;
+  //             if (cellY > 0 && !this.checkSnakePosition(cellX, checkY)) {
+  //               cellY--;
+  //               this.walls.push(new Cell(cellX, cellY));
+  //               placed = true;
+  //             }
+  //             break;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   checkSnakePosition(x,y){
     for (let s=0; s<this.snake.body.length; s++ ) {
@@ -255,6 +306,15 @@ export default class Game {
     return false;
   }
 
+  checkPortalPosition(x,y){
+    for (let s=0; s<this.portal.length; s++ ) {
+      if ( this.portal[s].x === x && this.portal[s].y === y ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   generateFood(){
     let placed = false;
     while(!placed) {
@@ -268,7 +328,9 @@ export default class Game {
         }
       }
 
-      placed = !this.checkWallPosition(x,y);
+      if ( this.mode === eMode.walls ) {
+        placed = !this.checkWallPosition(x,y);
+      }
 
       if (placed) {
         this.food.x = x;
@@ -329,6 +391,8 @@ export default class Game {
     this.elapsed = 0;
     this.snake = new Snake();
     this.generateFood();
+    this.portal = [];
+    this.walls = [];
     this.field.Draw(this.snake, this.food,this.walls,this.portal);
     this.isRunning = false;
 
@@ -342,13 +406,10 @@ export default class Game {
   start() {
     if (this.mode!==eMode.walls){
       this.walls = [];
+    }else{
+      this.generateWall();
     }
 
-    if (this.mode === eMode.portal){
-      this.generatePortal()
-    }else{
-      this.portal = [];
-    }
     this.speed = 200;
     if (this.mode === eMode.speed){
       this.speed = 350;
@@ -359,7 +420,13 @@ export default class Game {
     this.menuField.clear();
     this.createPlayMenu();
     this.snake = new Snake();
-    this.generateFood();
+    if (this.mode === eMode.portal){
+      this.generatePortal()
+      this.food = new Food();
+    }else{
+      this.portal = [];
+      this.generateFood();
+    }
     this.isRunning = true;
     this.elapsed = 0;
 
@@ -392,7 +459,7 @@ export default class Game {
     });
     this.menuField.addChild(gameNameTitle);
 
-    this.best = JSON.parse(localStorage.getItem('best'));
+    this.updateBestScore();
     const menuTextBest = new BitmapText({
       text: 'Best: '+this.best,
       style: {
@@ -462,7 +529,7 @@ export default class Game {
     });
     this.menuField.addChild(gameNameTitle);
 
-    this.best = JSON.parse(localStorage.getItem('best'));
+    this.updateBestScore();
     const menuTextBest = new BitmapText({
       text: 'Best: '+this.best,
       style: {
@@ -532,10 +599,6 @@ export default class Game {
 
     checkboxMenu.onChange.connect((selItem)=>{
       this.mode = selItem;
-
-      if (this.mode === eMode.walls){
-        this.generateWalls();
-      }
     });
 
     // Buttons
@@ -548,7 +611,7 @@ export default class Game {
     buttonExit.y = this.menuField.height-100;
 
     buttonStart.on('pointerdown', () => this.start());
-    buttonExit.on('pointerdown', () => this.stop());
+    buttonExit.on('pointerdown', () => window.close());
 
     this.menuField.addChild(buttonExit);
     this.menuField.addChild(buttonStart);

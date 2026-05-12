@@ -26,10 +26,30 @@ export class Snake extends Cell {
     }
   }
 
+  atePortal = (cell,portal) => {
+    if (portal.length > 0 && portal.length < 3) {
+      for (let i = 0; i < portal.length; i++) {
+        if (cell.x === portal[i].x && cell.y === portal[i].y) {
+          if (i === 0) {
+            i++;
+          } else {
+            i--;
+          }
+
+          this.currentHeadPosition = portal[i]
+          this.body.unshift(portal[i]);
+          break;
+        }
+      }
+    }
+  }
+
   checkSelfEating = cell => {
     for (let i = 0; i < this.body.length; i++) {
-      if ( this.body[i].x === cell.x && this.body[i].y ===cell.y) {
-        return true;
+      if (i<this.body.length-1){
+        if ( this.body[i].x === cell.x && this.body[i].y ===cell.y) {
+          return true;
+        }
       }
     }
     return false;
